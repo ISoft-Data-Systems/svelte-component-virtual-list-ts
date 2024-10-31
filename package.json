@@ -22,7 +22,7 @@
 		"dist"
 	],
 	"peerDependencies": {
-		"svelte": "^4.0.0"
+		"svelte": "^4.0.0 || ^5.1.6"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^2.0.0",
