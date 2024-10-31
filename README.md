@@ -1,3 +1,6 @@
+> [!NOTE]  
+> This is a straight fork of this repo https://github.com/crocotoast/svelte-virtual-list-ts/issues just with Svelte 5 added as a peer dependency
+
 # svelte-virtual-list-ts ([demo](https://svelte.dev/repl/3ed4b471023045e68b3b5a181dabb59d?version=3.46.2))
 
 Typescript rewrite of [svelte-virtual-list-ce](https://github.com/gitbreaker222/svelte-virtual-list)\.
