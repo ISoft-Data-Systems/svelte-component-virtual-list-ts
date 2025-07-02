@@ -10,6 +10,8 @@ The items prop aswell as the let:item binding is generic. If items has a time th
 
 A virtual list component for Svelte apps. Instead of rendering all your data, `<VirtualList>` just renders the bits that are visible, keeping your page nice and light.
 
+![Screenshot of the attachment component](screenshot.png?raw=true "Screenshot")
+
 ## Install
 
 ```sh
