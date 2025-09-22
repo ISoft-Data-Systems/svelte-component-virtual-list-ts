@@ -2,7 +2,7 @@
 	import VirtualList from '$lib/VirtualList.svelte'
 	const generateThings = (length: number) => Array.from({ length }, (_, index) => ({ number: index, name: 'test' }))
 
-	let show = $state(true)
+	let show = $state(false)
 </script>
 
 <div>
