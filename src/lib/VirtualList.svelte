@@ -28,8 +28,9 @@
 	let rows: HTMLCollectionOf<HTMLElement>
 	let viewport: Element | undefined = $state.raw()
 	let contents: Element | undefined = $state.raw()
+
 	let viewportHeight = $state(0)
-	let visible: Array<{ index: number; data: T }> = $derived(
+	let visibleRows: Array<{ index: number; data: T }> = $derived(
 		items.slice(start, end).map((data, i) => ({ index: i + start, data })),
 	)
 	let mounted: boolean = $state(false)
@@ -41,7 +42,6 @@
 	$inspect('viewportHeight', viewportHeight)
 
 	async function refresh(items: Array<T>, viewportHeight: number, itemHeight: number | undefined) {
-		$inspect.trace('refresh')
 		const isStartOverflow = items.length < start
 
 		if (isStartOverflow) {
@@ -50,7 +50,6 @@
 
 		await tick() // wait until the DOM is up to date
 
-		console.warn('getting viewport scrollTop')
 		let contentHeight = paddingTop - (viewport?.scrollTop ?? 0)
 		let i = start
 
@@ -63,9 +62,6 @@
 				row = rows[i - start]
 			}
 
-			if (!itemHeight) {
-				console.warn('will get offsetHeight')
-			}
 			// getting offsetHeight here will trigger Layout for every row that is rendered when this is run on mount
 			const rowHeight = (heightMap[i] = itemHeight || row.offsetHeight)
 			contentHeight += rowHeight
@@ -82,13 +78,9 @@
 	}
 
 	async function handleScroll() {
-		console.warn('getting viewport scrollTop')
 		const scrollTop = viewport?.scrollTop ?? 0
 
 		for (let v = 0; v < rows.length; v += 1) {
-			if (!itemHeight) {
-				console.warn('will get offsetHeight')
-			}
 			heightMap[start + v] = itemHeight || rows[v].offsetHeight
 		}
 
@@ -137,7 +129,6 @@
 		const _itemHeight = itemHeight || averageHeight
 		const distance = itemsDelta * _itemHeight
 
-		console.warn('scrolling viewport')
 		viewport?.scrollTo({
 			left: 0,
 			top: (viewport?.scrollTop ?? 0) + distance,
@@ -176,7 +167,7 @@
 		style:padding-top="{paddingTop}px"
 		style:padding-bottom="{paddingBottom}px"
 	>
-		{#each visible as row (row.index)}
+		{#each visibleRows as row (row.index)}
 			<svelte-virtual-list-row>
 				{@render children({ item: row.data })}
 			</svelte-virtual-list-row>
