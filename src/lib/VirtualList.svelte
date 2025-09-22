@@ -2,13 +2,15 @@
 	lang="ts"
 	generics="T"
 >
-	import { onMount, tick, type Snippet } from 'svelte'
+	import { onMount, tick, untrack, type Snippet } from 'svelte'
 
 	interface Props {
 		items: Array<T>
-		height?: CSSStyleValue
+		height?: string
 		itemHeight?: undefined | number
+		/** Index of first item currently shown in list */
 		start?: number
+		/** Index of last item currently shown in list*/
 		end?: number
 		children: Snippet<[{ item: T }]>
 	}
@@ -28,19 +30,18 @@
 	let contents: Element | undefined = $state.raw()
 	let viewportHeight = $state(0)
 	let visible: Array<{ index: number; data: T }> = $derived(
-		items.slice(start, end).map((data, i) => {
-			return { index: i + start, data }
-		}),
+		items.slice(start, end).map((data, i) => ({ index: i + start, data })),
 	)
 	let mounted: boolean = $state(false)
 
-	let top = $state(0)
-	let bottom = $state(0)
+	let paddingTop = $state(0)
+	let paddingBottom = $state(0)
 	let averageHeight: number
 
-	$inspect('heightMap', heightMap)
+	$inspect('viewportHeight', viewportHeight)
 
 	async function refresh(items: Array<T>, viewportHeight: number, itemHeight: number | undefined) {
+		$inspect.trace('refresh')
 		const isStartOverflow = items.length < start
 
 		if (isStartOverflow) {
@@ -49,7 +50,8 @@
 
 		await tick() // wait until the DOM is up to date
 
-		let contentHeight = top - (viewport?.scrollTop ?? 0)
+		console.warn('getting viewport scrollTop')
+		let contentHeight = paddingTop - (viewport?.scrollTop ?? 0)
 		let i = start
 
 		while (contentHeight < viewportHeight && i < items.length) {
@@ -61,6 +63,10 @@
 				row = rows[i - start]
 			}
 
+			if (!itemHeight) {
+				console.warn('will get offsetHeight')
+			}
+			// getting offsetHeight here will trigger Layout for every row that is rendered when this is run on mount
 			const rowHeight = (heightMap[i] = itemHeight || row.offsetHeight)
 			contentHeight += rowHeight
 			i += 1
@@ -69,18 +75,20 @@
 		end = i
 
 		const remaining = items.length - end
-		averageHeight = (top + contentHeight) / end
+		averageHeight = (paddingTop + contentHeight) / end
 
-		bottom = remaining * averageHeight
+		paddingBottom = remaining * averageHeight
 		heightMap.length = items.length
 	}
 
 	async function handleScroll() {
+		console.warn('getting viewport scrollTop')
 		const scrollTop = viewport?.scrollTop ?? 0
 
-		const oldStart = start
-
 		for (let v = 0; v < rows.length; v += 1) {
+			if (!itemHeight) {
+				console.warn('will get offsetHeight')
+			}
 			heightMap[start + v] = itemHeight || rows[v].offsetHeight
 		}
 
@@ -91,7 +99,7 @@
 			const rowHeight = heightMap[i] || averageHeight
 			if (y + rowHeight > scrollTop) {
 				start = i
-				top = y
+				paddingTop = y
 
 				break
 			}
@@ -104,16 +112,20 @@
 			y += heightMap[i] || averageHeight
 			i += 1
 
-			if (y > scrollTop + viewportHeight) break
+			if (y > scrollTop + viewportHeight) {
+				break
+			}
 		}
 
 		end = i
 
-		const remaining = items.length - end
+		const remainingItems = items.length - end
 		averageHeight = y / end
 
-		while (i < items.length) heightMap[i++] = averageHeight
-		bottom = remaining * averageHeight
+		while (i < items.length) {
+			heightMap[i++] = averageHeight
+		}
+		paddingBottom = remainingItems * averageHeight
 
 		// TODO if we overestimated the space these
 		// rows would occupy we may need to add some
@@ -125,6 +137,7 @@
 		const _itemHeight = itemHeight || averageHeight
 		const distance = itemsDelta * _itemHeight
 
+		console.warn('scrolling viewport')
 		viewport?.scrollTo({
 			left: 0,
 			top: (viewport?.scrollTop ?? 0) + distance,
@@ -133,10 +146,14 @@
 		})
 	}
 
-	// whenever `items` changes, invalidate the current heightMap
+	// Invalidate heightmap if any of these values change
 	$effect(() => {
+		items
+		itemHeight
+		viewportHeight
 		if (mounted) {
-			refresh(items, viewportHeight, itemHeight)
+			// Untrack this so that state read *within* refresh does not cause it to run again
+			untrack(() => refresh(items, viewportHeight, itemHeight))
 		}
 	})
 
@@ -151,12 +168,13 @@
 	bind:this={viewport}
 	bind:offsetHeight={viewportHeight}
 	onscroll={handleScroll}
-	style="height: {height};"
+	style:height
 	tabindex="-1"
 >
 	<svelte-virtual-list-contents
 		bind:this={contents}
-		style="padding-top: {top}px; padding-bottom: {bottom}px;"
+		style:padding-top="{paddingTop}px"
+		style:padding-bottom="{paddingBottom}px"
 	>
 		{#each visible as row (row.index)}
 			<svelte-virtual-list-row>
