@@ -1,6 +1,6 @@
 {
   "name": "@isoftdata/svelte-virtual-list-ts",
-  "version": "2.0.0-beta.2",
+  "version": "2.0.0-beta.3",
   "scripts": {
     "dev": "vite dev",
     "build": "vite build && npm run package",
