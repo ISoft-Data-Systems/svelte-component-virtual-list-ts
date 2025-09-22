@@ -39,8 +39,6 @@
 	let paddingBottom = $state(0)
 	let averageHeight: number
 
-	$inspect('viewportHeight', viewportHeight)
-
 	async function refresh(items: Array<T>, viewportHeight: number, itemHeight: number | undefined) {
 		const isStartOverflow = items.length < start
 
